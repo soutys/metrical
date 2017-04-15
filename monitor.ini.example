@@ -1,0 +1,55 @@
+[statsite]
+host = 127.0.0.1
+port = 2003
+prefix = production-host.
+
+[nginx_status]
+enabled = true
+scheme = http
+host = 127.0.0.1
+port = 80
+uri = /nginx_status
+server_name = localhost
+prefix = service.nginx.core.
+
+;[nginx_access_log]
+;enabled = true
+;prefix = service.nginx.access_log.
+
+;[nginx_error_log]
+;enabled = true
+;prefix = service.nginx.error_log.
+
+[redis_info]
+enabled = true
+socket = /tmp/redis.sock
+prefix = service.redis.
+
+[uwsgi_myapp:1]
+enabled = true
+scheme = http
+host = 127.0.0.1
+port = 1717
+uri = /uwsgi_stats/myapp
+server_name = localhost
+prefix = service.uwsgi.myapp.
+
+[uwsgi_myapp:2]
+enabled = true
+scheme = http
+host = 127.0.0.1
+port = 1818
+uri = /uwsgi_stats/myotherapp
+server_name = localhost
+prefix = service.uwsgi.myotherapp.
+
+[meminfo]
+enabled = true
+meminfo = /proc/meminfo
+prefix = system.memory.
+
+[load_info]
+enabled = true
+loadavg = /proc/loadavg
+prefix = system.load_info.
+
