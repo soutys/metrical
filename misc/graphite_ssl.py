@@ -3,7 +3,7 @@
 
 '''Supports flushing metrics to graphite via SSL socket connection
 
-WARNING: There's no host / cert checking here!
+WARNING: There's no serious host / cert checking here!
 
 For improved security see:
 * https://docs.python.org/3/library/ssl.html#ssl-security
@@ -22,6 +22,10 @@ import logging
 import socket
 import ssl
 import sys
+try:
+    from configparser import SafeConfigParser
+except ImportError:
+    from ConfigParser import SafeConfigParser
 
 from graphite import GraphiteStore
 
@@ -29,17 +33,18 @@ from graphite import GraphiteStore
 class GraphiteStoreSSL(GraphiteStore):
     '''Graphite store pusher
     '''
-    def __init__(self, *args, **kwargs):
-        super(GraphiteStoreSSL, self).__init__(*args, **kwargs)
-        self.ssl_opts = kwargs['ssl_opts']
-        self.hostname = kwargs['hostname']
+    def __init__(self, *args, **cfg):
+        self.ssl_opts = cfg['ssl_opts']
+        _host = args[1]
+        _port = int(args[2])
+        _prefix = args[3]
+        super(GraphiteStoreSSL, self).__init__(
+            host=_host, port=_port, prefix=_prefix)
 
 
     def _create_socket(self):
         '''Creates a SSL socket and connects to the graphite server
         '''
-        #cli_ctx = ssl.create_default_context()
-
         cli_ctx = ssl.SSLContext(protocol=ssl.PROTOCOL_TLSv1_2)
         cli_ctx.verify_mode = ssl.CERT_REQUIRED
         cli_ctx.check_hostname = True
@@ -70,17 +75,10 @@ class GraphiteStoreSSL(GraphiteStore):
         if self.ssl_opts['cli_dhfile']:
             cli_ctx.load_dh_params(self.ssl_opts['cli_dhfile'])
 
-        #def server_name_callback(ssl_sock, server_name, ssl_ctx):
-        #    print('ssl_sock:', ssl_sock)
-        #    print('server_name:', server_name)
-        #    print('ssl_ctx:', ssl_ctx)
-
-        #cli_ctx.set_servername_callback(server_name_callback)
-
         cli_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         cli_sock.settimeout(10)
 
-        ssl_sock = cli_ctx.wrap_socket(cli_sock, server_hostname=self.hostname)
+        ssl_sock = cli_ctx.wrap_socket(cli_sock, server_hostname=self.ssl_opts['hostname'])
         ssl_sock.connect((self.host, self.port))
 
         return ssl_sock
@@ -94,7 +92,16 @@ def main():
         format='%(asctime)s %(name)s %(levelname)s %(module)s:%(lineno)s %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S %Z')
 
-    graphite = GraphiteStoreSSL(*sys.argv[1:])
+    argv = sys.argv
+    cfg = {}
+    if len(argv) > 1 and '-c' in argv:
+        cfg_pos = argv.index('-c')
+        config = SafeConfigParser()
+        if config.read([argv[cfg_pos + 1]]):
+            cfg['ssl_opts'] = config['ssl_opts']
+        argv = argv[:cfg_pos]
+
+    graphite = GraphiteStoreSSL(*argv[1:], **cfg)
     metrics = sys.stdin.read()
     graphite.flush(metrics.split('\n'))
     graphite.close()
