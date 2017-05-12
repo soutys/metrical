@@ -1,0 +1,7 @@
+global-exclude *.py[cod]
+graft tests
+include *.py
+include README.*
+include setup.py
+include *.txt
+prune tests/__pycache__

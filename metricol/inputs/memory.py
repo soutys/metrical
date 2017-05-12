@@ -14,7 +14,7 @@ from __future__ import (
 import logging
 import re
 
-from . import MetricInput
+from metricol.inputs import MetricInput
 
 
 LOG = logging.getLogger(__name__)
@@ -64,14 +64,17 @@ def parse_meminfo(buf):
 class MemInfo(MetricInput):
     '''memory info fetcher / parser class
     '''
-    def __init__(self, section):
-        super(MemInfo, self).__init__(section)
+    options = ['meminfo', 'prefix']
+
+    def __init__(self, section, queue):
+        super(MemInfo, self).__init__(section, queue)
         self.data_parser = parse_meminfo
+
 
     def fetch_data(self):
         '''Fetches data from service
         '''
-        fpath = self.section['meminfo']
+        fpath = self.cfg['meminfo']
         try:
             with open(fpath, 'rb') as fd_obj:
                 return str(fd_obj.read(), encoding='utf-8')
@@ -80,5 +83,8 @@ class MemInfo(MetricInput):
 
         return ''
 
-    def iter_metrics(self, key, val):
-        yield self.section['prefix'] + METRICS_MAP[key] + ':' + str(val) + '|g'
+
+    def iter_metrics(self, key, val, tstamp):
+        yield (
+            self.cfg['prefix'] + key, val, MetricInput.METRIC_TYPE_GAUGE,
+            tstamp)

@@ -1,1 +1,16 @@
+*.egg
+*.egg-info
+*.py[cod]
+*.so
+.cache
+.coverage
+.coveralls.yml
+__pycache__
+build
+dist
+eggs
+htmlcov
+lib
+lib64
 monitor.ini
+sdist

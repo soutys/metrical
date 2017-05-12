@@ -16,7 +16,7 @@ import re
 
 import redis
 
-from . import MetricInput
+from metricol.inputs import MetricInput
 
 
 LOG = logging.getLogger(__name__)
@@ -74,23 +74,49 @@ METRICS_MAP = {
 class RedisInfo(MetricInput):
     '''redis info fetcher / parser class
     '''
+    options = ['socket', 'prefix']
+    counters_keys = [
+        'evicted_keys',
+        'expired_keys',
+        'keyspace_hits',
+        'keyspace_misses',
+        'rejected_connections',
+        'total_commands_processed',
+        'total_connections_received',
+    ]
+
+    def __init__(self, section, queue):
+        super(RedisInfo, self).__init__(section, queue)
+        self.prev_values = {}
+
+
     def fetch_data(self):
         '''Fetches data from service
         '''
-        sock_path = self.section['socket']
+        sock_path = self.cfg['socket']
         try:
             cli = redis.StrictRedis(unix_socket_path=sock_path)
             return cli.info()
         except redis.exceptions.RedisError as exc:
             LOG.warning('%s @ %s', repr(exc), repr(sock_path))
 
-    def iter_metrics(self, key, val):
+
+    def iter_metrics(self, key, val, tstamp):
         match = KEYSPACE_RE.match(key)
         if match:
             for subkey in ['keys', 'expires', 'avg_ttl']:
-                yield self.section['prefix'] + 'keyspace.' + key \
-                    + '.' + subkey + ':' + str(val[subkey]) + '|g'
-        else:
-            if key in METRICS_MAP:
-                yield self.section['prefix'] + METRICS_MAP[key] \
-                    + '.' + key + ':' + str(val) + '|g'
+                yield (
+                    self.cfg['prefix'] + 'keyspace.' + key + '.' + subkey,
+                    val[subkey], MetricInput.METRIC_TYPE_GAUGE, tstamp)
+        elif key in METRICS_MAP and isinstance(val, (int, float)):
+            metric_type = MetricInput.METRIC_TYPE_GAUGE
+            if key in self.counters_keys:
+                metric_type = MetricInput.METRIC_TYPE_COUNTER
+                prev_val = self.prev_values.get(key)
+                self.prev_values[key] = val
+                if prev_val is not None:
+                    val -= prev_val
+
+            yield (
+                self.cfg['prefix'] + METRICS_MAP[key] + '.' + key,
+                val, metric_type, tstamp)
