@@ -101,10 +101,9 @@ class UwsgiStats(MetricInput):
                     self.prev_values[mkey] = _val
                     if prev_val is not None:
                         _val -= prev_val
-
-                    yield (
-                        self.cfg['prefix'] + mkey, val,
-                        MetricInput.METRIC_TYPE_COUNTER, tstamp)
+                        yield (
+                            self.cfg['prefix'] + mkey, _val,
+                            MetricInput.METRIC_TYPE_COUNTER, tstamp)
 
         elif key == 'sockets':
             for idx, socket in enumerate(val):

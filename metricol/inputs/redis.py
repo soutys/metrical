@@ -110,6 +110,7 @@ class RedisInfo(MetricInput):
                     val[subkey], MetricInput.METRIC_TYPE_GAUGE, tstamp)
         elif key in METRICS_MAP and isinstance(val, (int, float)):
             metric_type = MetricInput.METRIC_TYPE_GAUGE
+            prev_val = val
             if key in self.counters_keys:
                 metric_type = MetricInput.METRIC_TYPE_COUNTER
                 prev_val = self.prev_values.get(key)
@@ -117,6 +118,7 @@ class RedisInfo(MetricInput):
                 if prev_val is not None:
                     val -= prev_val
 
-            yield (
-                self.cfg['prefix'] + METRICS_MAP[key] + '.' + key,
-                val, metric_type, tstamp)
+            if prev_val is not None:
+                yield (
+                    self.cfg['prefix'] + METRICS_MAP[key] + '.' + key,
+                    val, metric_type, tstamp)

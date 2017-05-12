@@ -74,7 +74,7 @@ class NginxStatus(MetricInput):
 
 
     def iter_metrics(self, key, val, tstamp):
-        val = int(val) if val.isdigit() else float(val)
+        prev_val = val = int(val) if val.isdigit() else float(val)
         metric_type = MetricInput.METRIC_TYPE_GAUGE
         if key in self.counters_keys:
             metric_type = MetricInput.METRIC_TYPE_COUNTER
@@ -83,4 +83,5 @@ class NginxStatus(MetricInput):
             if prev_val is not None:
                 val -= prev_val
 
-        yield (self.cfg['prefix'] + key, val, metric_type, tstamp)
+        if prev_val is not None:
+            yield (self.cfg['prefix'] + key, val, metric_type, tstamp)
