@@ -41,6 +41,7 @@ class LogWatch(MetricInput):
         super(LogWatch, self).__init__(section, queue)
         self.sel_poll = select.poll()
         self.proc = None
+        self.prev_values = {}
 
 
     def prepare_things(self):
@@ -90,8 +91,20 @@ class LogWatch(MetricInput):
 
 
     def iter_metrics(self, key, val, tstamp):
-        yield (self.cfg['prefix'] + key, val, MetricInput.METRIC_TYPE_GAUGE, tstamp)
-        yield (self.cfg['prefix'] + key, val, MetricInput.METRIC_TYPE_COUNTER, tstamp)
+        metric_type = MetricInput.METRIC_TYPE_GAUGE
+        prev_val = val
+        if key in self.counters_keys:
+            metric_type = MetricInput.METRIC_TYPE_COUNTER
+            prev_val = self.prev_values.get(key)
+            self.prev_values[key] = val
+            if prev_val is not None:
+                val -= prev_val
+        elif key in self.timers_keys:
+            metric_type = MetricInput.METRIC_TYPE_TIMER
+
+        if prev_val is not None:
+            yield (
+                self.cfg['prefix'] + key, val, metric_type, tstamp)
 
 
     def get_metrics(self):
@@ -101,12 +114,3 @@ class LogWatch(MetricInput):
         for key, (now_ts, val) in self.parse_data(data).items():
             for metric_data in self.iter_metrics(key, val, now_ts):
                 self.queue.put(metric_data)
-
-
-    def run(self):
-        self.prepare_things()
-        while self.keep_running:
-            LOG.info('Running...')
-            self.do_things()
-
-        LOG.info('Exiting...')
