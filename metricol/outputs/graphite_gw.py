@@ -11,6 +11,7 @@ from __future__ import (
     with_statement,
 )
 
+import gzip
 import logging
 from queue import Empty
 
@@ -31,19 +32,25 @@ class GraphiteGateway(MetricOutput):
     '''Graphite pusher class
     '''
     options = [
-        'scheme', 'host', 'port', 'uri', 'hostname', 'prefix',
+        'scheme', 'host', 'port', 'uri', 'hostname', 'prefix', 'gzip_level',
         'cafile', 'cli_certfile', 'cli_keyfile']
 
     def __init__(self, section, queue):
         super(GraphiteGateway, self).__init__(section, queue)
         self.req_session = Session()
         self.url = 'http://localhost/'
+        self.gzip_level = 0
 
 
     def prepare_things(self):
         super(GraphiteGateway, self).prepare_things()
         self.url = '%(scheme)s://%(host)s:%(port)s%(uri)s' % self.cfg
         self.req_session.headers = {'Host': self.cfg['hostname']}
+        gzip_level = self.cfg.get('gzip_level')
+        if gzip_level and gzip_level.isdigit():
+            self.gzip_level = int(gzip_level)
+        if self.gzip_level:
+            self.req_session.headers['Content-Encoding'] = 'gzip'
         self.req_session.stream = False
         self.req_session.allow_redirects = True
         self.req_session.verify = self.cfg['cafile']
@@ -77,8 +84,13 @@ class GraphiteGateway(MetricOutput):
         if not batch:
             return
 
+        payload = '\n'.join(batch)
+        if self.gzip_level:
+            payload = gzip.compress(
+                bytes(payload, encoding='utf-8'), compresslevel=self.gzip_level)
+
         try:
-            resp = self.req_session.post(self.url, data='\n'.join(batch))
+            resp = self.req_session.post(self.url, data=payload)
             if resp.status_code != codes['ok']:
                 LOG.warning('Code %s @ %s', resp.status_code, repr(self.url))
         except RequestException as exc:
