@@ -35,6 +35,7 @@ class MetricOutput(ManageableThread):
     def prepare_things(self):
         for field in self.options:
             self.cfg[field] = self._section[field]
+        self.period = int(self._section.get('period', self.period))
 
 
     def do_things(self):

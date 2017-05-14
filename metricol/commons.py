@@ -26,6 +26,7 @@ class ManageableThread(threading.Thread):
     def __init__(self, *args, **kwargs):
         super(ManageableThread, self).__init__(*args, **kwargs)
         self.keep_running = True
+        self.period = 10
         LOG.info('Initialized')
 
 
@@ -60,7 +61,7 @@ class ManageableThread(threading.Thread):
         while self.keep_running:
             LOG.debug('Running...')
             self.do_things()
-            for _ in range(60):
+            for _ in range(self.period):
                 if not self.keep_running:
                     break
                 time.sleep(1.0)

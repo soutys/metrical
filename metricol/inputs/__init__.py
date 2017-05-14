@@ -27,6 +27,8 @@ class MetricInput(ManageableThread):
     METRIC_TYPE_COUNTER = 'c'
     METRIC_TYPE_TIMER = 'ms'
     options = []
+    counters_keys = []
+    timers_keys = []
 
     def __init__(self, section, queue):
         self._section = section
@@ -39,6 +41,7 @@ class MetricInput(ManageableThread):
     def prepare_things(self):
         for field in self.options:
             self.cfg[field] = self._section[field]
+        self.period = int(self._section.get('period', self.period))
 
 
     def do_things(self):
