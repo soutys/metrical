@@ -16,39 +16,84 @@ import re
 import select
 import shlex
 import subprocess
-import time
+from time import mktime, strptime
 
 from metricol.inputs import MetricInput
 
 
 LOG = logging.getLogger(__name__)
 
+ATIME_FMT = '%d/%b/%Y:%H:%M:%S %z'
+ETIME_FMT = '%Y/%m/%d %H:%M:%S'
 
-def parse_log_line(line, pattern):
+
+def decode_time(value, pattern):
+    '''Decodes time representation by pattern
+    '''
+    try:
+        return int(mktime(strptime(value, pattern)))
+    except (OverflowError, ValueError) as exc:
+        LOG.warning('%s @ %s', repr(exc), repr(value))
+
+
+def parse_log_lines(lines, pattern):
     '''Parses log line using pattern
     '''
-    print(line, pattern)
-    return {}
+    for idx, line in enumerate(lines):
+        match = pattern.match(line)
+        if not match:
+            continue
+
+        data = match.groupdict()
+        if 'http' in data:
+            data['http'] = data['http'].replace('.', '_')
+        if 'uri' in data and data['uri'].startswith('/') \
+                and data['uri'].count('/') > 2:
+            data['uri'] = data['uri'].split('/', 2)[1].replace('.', '_')
+            if not data['uri']:
+                del data['uri']
+        if 'ures' in data and data['ures'] == '-':
+            del data['ures']
+        if 'atime' in data:
+            data['time'] = decode_time(data['atime'], ATIME_FMT)
+            del data['atime']
+        if 'etime' in data:
+            data['time'] = decode_time(data['etime'], ETIME_FMT)
+            del data['etime']
+
+        yield (idx, (data.pop('time'), data))
 
 
 class LogWatch(MetricInput):
     '''Logs watcher
     '''
     options = ['log_fpath', 'pattern', 'prefix']
+    counter_keys = [
+        'bbytes',
+        'fun',
+        'http',
+        'lvl',
+        'method',
+        'status',
+        'uri',
+    ]
+    timer_keys = [
+        'req',
+        'ures',
+    ]
     TAIL_CMD_FMT = '/usr/bin/tail --follow=name --lines=1000 --quiet --retry %s'
 
     def __init__(self, section, queue):
         super(LogWatch, self).__init__(section, queue)
         self.sel_poll = select.poll()
         self.proc = None
-        self.prev_values = {}
 
 
     def prepare_things(self):
         super(LogWatch, self).prepare_things()
         cmd = self.TAIL_CMD_FMT % self.cfg['log_fpath']
         pattern = re.compile(self.cfg['pattern'])
-        self.data_parser = lambda line: parse_log_line(line, pattern)
+        self.data_parser = lambda lines: parse_log_lines(lines, pattern)
 
         try:
             self.proc = subprocess.Popen(
@@ -73,44 +118,40 @@ class LogWatch(MetricInput):
 
 
     def fetch_data(self):
-        no_data = True
+        fetched_data = []
         for fileno, _ in self.sel_poll.poll(100):
             if fileno == self.proc.stdout.fileno():
-                line = self.proc.stdout.readline().strip()
+                line = str(self.proc.stdout.readline().strip(), encoding='utf-8')
                 if line:
-                    no_data = False
-                    LOG.info('OUT: %s', repr(line))
+                    fetched_data.append(line)
             elif fileno == self.proc.stderr.fileno():
                 line = self.proc.stderr.readline().strip()
                 if line:
-                    no_data = False
                     LOG.warning('ERR: %s', repr(line))
 
-        if no_data:
-            time.sleep(1.0)
+        return fetched_data
 
 
-    def iter_metrics(self, key, val, tstamp):
-        metric_type = MetricInput.METRIC_TYPE_GAUGE
-        prev_val = val
-        if key in self.counters_keys:
-            metric_type = MetricInput.METRIC_TYPE_COUNTER
-            prev_val = self.prev_values.get(key)
-            self.prev_values[key] = val
-            if prev_val is not None:
-                val -= prev_val
-        elif key in self.timers_keys:
-            metric_type = MetricInput.METRIC_TYPE_TIMER
+    def iter_metrics(self, _, val, tstamp):
+        for _key, _val in val.items():
+            metric_type = MetricInput.METRIC_TYPE_GAUGE
+            if _key in self.counter_keys:
+                metric_type = MetricInput.METRIC_TYPE_COUNTER
+            elif _key in self.timer_keys:
+                metric_type = MetricInput.METRIC_TYPE_TIMER
 
-        if prev_val is not None:
-            yield (
-                self.cfg['prefix'] + key, val, metric_type, tstamp)
+            key = _key
+            if _key in ['fun', 'http', 'lvl', 'method', 'status', 'uri']:
+                key += '.' + _val
+                _val = 1
+
+            yield (self.cfg['prefix'] + key, _val, metric_type, tstamp)
 
 
     def get_metrics(self):
         '''Returns a list of metrics
         '''
         data = self.fetch_data()
-        for key, (now_ts, val) in self.parse_data(data).items():
+        for key, (now_ts, val) in self.parse_data(data):
             for metric_data in self.iter_metrics(key, val, now_ts):
                 self.queue.put(metric_data)

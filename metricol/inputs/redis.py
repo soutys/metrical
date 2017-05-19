@@ -75,7 +75,7 @@ class RedisInfo(MetricInput):
     '''redis info fetcher / parser class
     '''
     options = ['socket', 'prefix']
-    counters_keys = [
+    absolute_keys = [
         'evicted_keys',
         'expired_keys',
         'keyspace_hits',
@@ -111,7 +111,7 @@ class RedisInfo(MetricInput):
         elif key in METRICS_MAP and isinstance(val, (int, float)):
             metric_type = MetricInput.METRIC_TYPE_GAUGE
             prev_val = val
-            if key in self.counters_keys:
+            if key in self.absolute_keys:
                 metric_type = MetricInput.METRIC_TYPE_COUNTER
                 prev_val = self.prev_values.get(key)
                 self.prev_values[key] = val

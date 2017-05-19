@@ -42,7 +42,7 @@ class NginxStatus(MetricInput):
     '''
     options = ['scheme', 'host', 'port', 'uri', 'server_name', 'prefix']
     URL_FMT = '%(scheme)s://%(host)s:%(port)s%(uri)s'
-    counters_keys = ['accepts', 'handled', 'requests']
+    absolute_keys = ['accepts', 'handled', 'requests']
 
     def __init__(self, section, queue):
         super(NginxStatus, self).__init__(section, queue)
@@ -76,7 +76,7 @@ class NginxStatus(MetricInput):
     def iter_metrics(self, key, val, tstamp):
         prev_val = val = int(val) if val.isdigit() else float(val)
         metric_type = MetricInput.METRIC_TYPE_GAUGE
-        if key in self.counters_keys:
+        if key in self.absolute_keys:
             metric_type = MetricInput.METRIC_TYPE_COUNTER
             prev_val = self.prev_values.get(key)
             self.prev_values[key] = val

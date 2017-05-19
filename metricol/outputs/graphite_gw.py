@@ -70,6 +70,8 @@ class GraphiteGateway(MetricOutput):
         elif _type == MetricInput.METRIC_TYPE_TIMER:
             return self.cfg['prefix'] + 'timers.' + _line
 
+        LOG.warning('Unknown metric type: %s @ %s', _type, _line)
+
 
     def do_things(self):
         batch = []
@@ -77,7 +79,8 @@ class GraphiteGateway(MetricOutput):
             try:
                 metric_data = self.queue.get(block=False)
                 metric_line = self.get_metric_line(metric_data)
-                batch.append(metric_line)
+                if metric_line:
+                    batch.append(metric_line)
             except Empty:
                 break
 

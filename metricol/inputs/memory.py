@@ -86,5 +86,4 @@ class MemInfo(MetricInput):
 
     def iter_metrics(self, key, val, tstamp):
         yield (
-            self.cfg['prefix'] + key, val, MetricInput.METRIC_TYPE_GAUGE,
-            tstamp)
+            self.cfg['prefix'] + key, val, MetricInput.METRIC_TYPE_GAUGE, tstamp)

@@ -27,8 +27,9 @@ class MetricInput(ManageableThread):
     METRIC_TYPE_COUNTER = 'c'
     METRIC_TYPE_TIMER = 'ms'
     options = []
-    counters_keys = []
-    timers_keys = []
+    absolute_keys = []
+    counter_keys = []
+    timer_keys = []
 
     def __init__(self, section, queue):
         self._section = section
