@@ -36,11 +36,11 @@ def decode_time(value, pattern):
         LOG.warning('%s @ %s', repr(exc), repr(value))
 
 
-def parse_log_lines(lines, pattern):
+def parse_log_lines(lines, pattern_fn):
     '''Parses log line using pattern
     '''
     for idx, line in enumerate(lines):
-        match = pattern.match(line)
+        match = pattern_fn(line)
         if not match:
             continue
 
@@ -50,8 +50,8 @@ def parse_log_lines(lines, pattern):
         if 'uri' in data and data['uri'].startswith('/') \
                 and data['uri'].count('/') > 2:
             data['uri'] = data['uri'].split('/', 2)[1].replace('.', '_')
-            if not data['uri']:
-                del data['uri']
+        if 'uri' not in data or not data['uri']:
+            data['uri'] = '_other'
         if 'ures' in data and data['ures'] == '-':
             del data['ures']
         if 'atime' in data:
@@ -67,7 +67,7 @@ def parse_log_lines(lines, pattern):
 class LogWatch(MetricInput):
     '''Logs watcher
     '''
-    options = ['log_fpath', 'pattern', 'prefix']
+    options = ['log_fpath', 'pattern', 'method', 'prefix']
     counter_keys = [
         'bbytes',
         'fun',
@@ -93,7 +93,8 @@ class LogWatch(MetricInput):
         super(LogWatch, self).prepare_things()
         cmd = self.TAIL_CMD_FMT % self.cfg['log_fpath']
         pattern = re.compile(self.cfg['pattern'])
-        self.data_parser = lambda lines: parse_log_lines(lines, pattern)
+        pattern_fn = getattr(pattern, self.cfg['method'])
+        self.data_parser = lambda lines: parse_log_lines(lines, pattern_fn)
 
         try:
             self.proc = subprocess.Popen(
