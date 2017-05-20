@@ -42,7 +42,6 @@ class NginxStatus(MetricInput):
     '''
     options = ['scheme', 'host', 'port', 'uri', 'server_name', 'prefix']
     URL_FMT = '%(scheme)s://%(host)s:%(port)s%(uri)s'
-    absolute_keys = ['accepts', 'handled', 'requests']
 
     def __init__(self, section, queue):
         super(NginxStatus, self).__init__(section, queue)

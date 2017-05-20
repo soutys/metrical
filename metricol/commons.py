@@ -11,7 +11,10 @@ from __future__ import (
     with_statement,
 )
 
+import importlib
+import inspect
 import logging
+import sys
 import threading
 import time
 
@@ -67,3 +70,23 @@ class ManageableThread(threading.Thread):
                 time.sleep(1.0)
 
         LOG.info('Exiting...')
+
+
+def get_method_by_path(method_path):
+    '''Returns method by path (root_module.sub_module.(...).a_method)
+    '''
+    method_mod, method_name = method_path.rsplit('.', 1)
+    try:
+        importlib.import_module(method_mod)
+    except ImportError:
+        return None
+
+    mod = sys.modules[method_mod]
+    try:
+        method_obj = mod.__dict__[method_name]
+        if inspect.isfunction(method_obj):
+            return method_obj
+    except NameError:
+        pass
+
+    return None

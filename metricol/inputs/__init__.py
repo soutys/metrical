@@ -29,6 +29,7 @@ class MetricInput(ManageableThread):
     options = []
     absolute_keys = []
     counter_keys = []
+    kv_keys = []
     timer_keys = []
 
     def __init__(self, section, queue):
@@ -43,6 +44,11 @@ class MetricInput(ManageableThread):
         for field in self.options:
             self.cfg[field] = self._section[field]
         self.period = int(self._section.get('period', self.period))
+        for field in ['absolute_keys', 'counter_keys', 'kv_keys', 'timer_keys']:
+            if field not in self._section:
+                continue
+            setattr(
+                self, field, [_key.strip() for _key in self._section[field].split(',')])
 
 
     def do_things(self):

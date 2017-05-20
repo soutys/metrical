@@ -75,15 +75,6 @@ class RedisInfo(MetricInput):
     '''redis info fetcher / parser class
     '''
     options = ['socket', 'prefix']
-    absolute_keys = [
-        'evicted_keys',
-        'expired_keys',
-        'keyspace_hits',
-        'keyspace_misses',
-        'rejected_connections',
-        'total_commands_processed',
-        'total_connections_received',
-    ]
 
     def __init__(self, section, queue):
         super(RedisInfo, self).__init__(section, queue)

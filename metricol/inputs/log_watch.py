@@ -17,76 +17,17 @@ import select
 import shlex
 import subprocess
 
-import dateutil.parser as du_parser
-
+from metricol.commons import get_method_by_path
 from metricol.inputs import MetricInput
 
 
 LOG = logging.getLogger(__name__)
 
 
-def decode_time(value):
-    '''Decodes time representation
-    '''
-    try:
-        return int(du_parser.parse(value).timestamp())
-    except (OverflowError, ValueError) as exc:
-        LOG.warning('%s @ %s', repr(exc), repr(value))
-
-
-def parse_log_lines(lines, pattern_fn):
-    '''Parses log line using pattern
-    '''
-    for idx, line in enumerate(lines):
-        match = pattern_fn(line)
-        if not match:
-            continue
-
-        data = match.groupdict()
-        if 'time' in data:
-            data['time'] = decode_time(data['time'])
-        if 'uri' in data:
-            if data['uri'].count('/') > 1:
-                data['uri'] = data['uri'].split('/', 1)[0].replace('.', '_')
-            if not data['uri']:
-                data['uri'] = '_other'
-        if 'http' in data:
-            data['http'] = data['http'].replace('.', '_')
-
-        for field in ['uctim', 'uhtim', 'urtim', 'gzip']:
-            if field in data and data[field] == '-':
-                del data[field]
-
-        if 'pipe' in data:
-            if data['pipe'] != 'p':
-                del data['pipe']
-
-        LOG.info('DATA: %s', repr(data))
-
-        yield (idx, (data.pop('time'), data))
-
-
 class LogWatch(MetricInput):
     '''Logs watcher
     '''
-    options = ['log_fpath', 'pattern', 'method', 'prefix']
-    counter_keys = [
-        'method',
-        'uri',
-        'http',
-        'status',
-        'rbytes',
-        'bbytes',
-        'pipe',
-        'fun',
-        'lvl',
-    ]
-    timer_keys = [
-        'uctim',
-        'uhtim',
-        'urtim',
-        'rtime',
-    ]
+    options = ['log_fpath', 'parser', 'pattern', 'method', 'prefix']
     TAIL_CMD_FMT = '/usr/bin/tail --follow=name --lines=1000 --quiet --retry %s'
 
     def __init__(self, section, queue):
@@ -100,6 +41,7 @@ class LogWatch(MetricInput):
         cmd = self.TAIL_CMD_FMT % self.cfg['log_fpath']
         pattern = re.compile(self.cfg['pattern'])
         pattern_fn = getattr(pattern, self.cfg['method'])
+        parse_log_lines = get_method_by_path(self.cfg['parser'])
         self.data_parser = lambda lines: parse_log_lines(
             lines, pattern_fn)
 
@@ -149,7 +91,7 @@ class LogWatch(MetricInput):
                 metric_type = MetricInput.METRIC_TYPE_TIMER
 
             key = _key
-            if _key in ['fun', 'http', 'lvl', 'method', 'status', 'uri', 'pipe']:
+            if _key in self.kv_keys:
                 key += '.' + _val
                 _val = 1
 
