@@ -16,22 +16,20 @@ import re
 import select
 import shlex
 import subprocess
-from time import mktime, strptime
+
+import dateutil.parser as du_parser
 
 from metricol.inputs import MetricInput
 
 
 LOG = logging.getLogger(__name__)
 
-ATIME_FMT = '%d/%b/%Y:%H:%M:%S %z'
-ETIME_FMT = '%Y/%m/%d %H:%M:%S'
 
-
-def decode_time(value, pattern):
-    '''Decodes time representation by pattern
+def decode_time(value):
+    '''Decodes time representation
     '''
     try:
-        return int(mktime(strptime(value, pattern)))
+        return int(du_parser.parse(value).timestamp())
     except (OverflowError, ValueError) as exc:
         LOG.warning('%s @ %s', repr(exc), repr(value))
 
@@ -45,21 +43,25 @@ def parse_log_lines(lines, pattern_fn):
             continue
 
         data = match.groupdict()
+        if 'time' in data:
+            data['time'] = decode_time(data['time'])
+        if 'uri' in data:
+            if data['uri'].count('/') > 1:
+                data['uri'] = data['uri'].split('/', 1)[0].replace('.', '_')
+            if not data['uri']:
+                data['uri'] = '_other'
         if 'http' in data:
             data['http'] = data['http'].replace('.', '_')
-        if 'uri' in data and data['uri'].startswith('/') \
-                and data['uri'].count('/') > 2:
-            data['uri'] = data['uri'].split('/', 2)[1].replace('.', '_')
-        if 'uri' not in data or not data['uri']:
-            data['uri'] = '_other'
-        if 'ures' in data and data['ures'] == '-':
-            del data['ures']
-        if 'atime' in data:
-            data['time'] = decode_time(data['atime'], ATIME_FMT)
-            del data['atime']
-        if 'etime' in data:
-            data['time'] = decode_time(data['etime'], ETIME_FMT)
-            del data['etime']
+
+        for field in ['uctim', 'uhtim', 'urtim', 'gzip']:
+            if field in data and data[field] == '-':
+                del data[field]
+
+        if 'pipe' in data:
+            if data['pipe'] != 'p':
+                del data['pipe']
+
+        LOG.info('DATA: %s', repr(data))
 
         yield (idx, (data.pop('time'), data))
 
@@ -69,17 +71,21 @@ class LogWatch(MetricInput):
     '''
     options = ['log_fpath', 'pattern', 'method', 'prefix']
     counter_keys = [
-        'bbytes',
-        'fun',
-        'http',
-        'lvl',
         'method',
-        'status',
         'uri',
+        'http',
+        'status',
+        'rbytes',
+        'bbytes',
+        'pipe',
+        'fun',
+        'lvl',
     ]
     timer_keys = [
-        'req',
-        'ures',
+        'uctim',
+        'uhtim',
+        'urtim',
+        'rtime',
     ]
     TAIL_CMD_FMT = '/usr/bin/tail --follow=name --lines=1000 --quiet --retry %s'
 
@@ -94,7 +100,8 @@ class LogWatch(MetricInput):
         cmd = self.TAIL_CMD_FMT % self.cfg['log_fpath']
         pattern = re.compile(self.cfg['pattern'])
         pattern_fn = getattr(pattern, self.cfg['method'])
-        self.data_parser = lambda lines: parse_log_lines(lines, pattern_fn)
+        self.data_parser = lambda lines: parse_log_lines(
+            lines, pattern_fn)
 
         try:
             self.proc = subprocess.Popen(
@@ -142,7 +149,7 @@ class LogWatch(MetricInput):
                 metric_type = MetricInput.METRIC_TYPE_TIMER
 
             key = _key
-            if _key in ['fun', 'http', 'lvl', 'method', 'status', 'uri']:
+            if _key in ['fun', 'http', 'lvl', 'method', 'status', 'uri', 'pipe']:
                 key += '.' + _val
                 _val = 1
 
