@@ -30,7 +30,7 @@ class ManageableThread(threading.Thread):
         super(ManageableThread, self).__init__(*args, **kwargs)
         self.keep_running = True
         self.period = 10
-        LOG.info('Initialized')
+        LOG.info('%s thread initialized', self.getName())
 
 
     def prepare_things(self):
@@ -56,7 +56,7 @@ class ManageableThread(threading.Thread):
         '''
         self.keep_running = False
         self.stop_things()
-        LOG.info('Stopping...')
+        LOG.info('%s thread stopping...', self.getName())
 
 
     def run(self):
@@ -69,7 +69,7 @@ class ManageableThread(threading.Thread):
                     break
                 time.sleep(1.0)
 
-        LOG.info('Exiting...')
+        LOG.info('%s thread exiting...', self.getName())
 
 
 def get_method_by_path(method_path):

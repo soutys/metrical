@@ -24,6 +24,7 @@ from metricol.inputs.log_watch import LogWatch
 from metricol.inputs.memory import MemInfo
 from metricol.inputs.nginx import NginxStatus
 from metricol.inputs.redis import RedisInfo
+from metricol.inputs.sys_class_net import SysClassNet
 from metricol.inputs.uwsgi import UwsgiStats
 from metricol.outputs.graphite_gw import GraphiteGateway
 
@@ -39,6 +40,7 @@ INPUT_PLUGINS = {
     'meminfo': MemInfo,
     'nginx_status': NginxStatus,
     'redis_info': RedisInfo,
+    'sys_class_net': SysClassNet,
     'uwsgi_stats': UwsgiStats,
 }
 THREADS = []
@@ -51,6 +53,16 @@ def signal_recv(signum, _):
     while THREADS:
         thr = THREADS.pop()
         thr.stop()
+
+
+def config_logger(log_level):
+    '''Configures logger
+    '''
+    logging.basicConfig(
+        level=log_level,
+        format='%(asctime)s %(name)s %(levelname)s %(module)s:%(lineno)s'
+        ' %(threadName)s:%(funcName)s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S %Z')
 
 
 def load_config(cfg_fpath):
@@ -67,11 +79,7 @@ def load_config(cfg_fpath):
 def main():
     '''Main method
     '''
-    logging.basicConfig(
-        level=logging.NOTSET,
-        format='%(asctime)s %(name)s %(levelname)s %(module)s:%(lineno)s'
-        ' %(threadName)s:%(funcName)s %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S %Z')
+    config_logger(logging.NOTSET)
 
     if len(os.sys.argv) != 2:
         LOG.critical('Usage: %s config_file', os.sys.argv[0])
@@ -87,6 +95,11 @@ def main():
     if not output_found:
         LOG.critical('No "output:..." section(s) in config')
         raise RuntimeError('Aborting...')
+
+    if 'DEFAULT' in cfg and cfg['DEFAULT'].get('log_level'):
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+        config_logger(getattr(logging, cfg['DEFAULT']['log_level'], logging.NOTSET))
 
     signal.signal(signal.SIGTERM, signal_recv)
     output_queue = Queue()
