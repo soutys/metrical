@@ -19,6 +19,7 @@ import signal
 import time
 from queue import Queue
 
+from metricol.inputs.disks_spaces import DisksSpaces
 from metricol.inputs.load_info import LoadInfo
 from metricol.inputs.log_watch import LogWatch
 from metricol.inputs.memory import MemInfo
@@ -35,6 +36,7 @@ OUTPUT_PLUGINS = {
     'graphite_gw': GraphiteGateway,
 }
 INPUT_PLUGINS = {
+    'disks_spaces': DisksSpaces,
     'load_info': LoadInfo,
     'log_watch': LogWatch,
     'meminfo': MemInfo,
