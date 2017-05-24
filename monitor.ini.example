@@ -1,55 +1,112 @@
-[statsite]
-host = 127.0.0.1
-port = 2003
+[DEFAULT]
+log_level = INFO
+period = 10
+
+[output:graphite_gw]
+plugin = graphite_gw
+scheme = https
+host = production-host
+port = 12003
+uri = /collector/
+hostname = production-host
+gzip_level = 0
 prefix = production-host.
+cafile = ./ssl/ca.crt
+cli_certfile = ./ssl/cli.crt
+cli_keyfile = ./ssl/cli.key
 
-[nginx_status]
-enabled = true
-scheme = http
-host = 127.0.0.1
-port = 80
+[input:nginx_status]
+plugin = nginx_status
+scheme = https
+host = www-host
+port = 443
 uri = /nginx_status
-server_name = localhost
+server_name = www-host
 prefix = service.nginx.core.
+absolute_keys = accepts,handled,requests
 
-;[nginx_access_log]
-;enabled = true
-;prefix = service.nginx.access_log.
+[input:nginx_access_log]
+plugin = log_watch
+period = 0
+log_fpath = /var/log/nginx/access.log
+prefix = service.nginx.access_log.
+parser = metricol.inputs.plugins.nginx_logs.parse_log_lines
+pattern = \[(?P<time>[^\]]{25})\] "(?P<method>[A-Z]{1,7}) /(?P<uri>.*?) HTTP/(?P<http>[.0-2]{3})" (?P<status>[0-9]{3}) (?P<rbytes>[0-9]+)/(?P<bbytes>[0-9]+) (?P<uctim>[-.0-9]{1,5})/(?P<uhtim>[-.0-9]{1,5})/(?P<urtim>[-.0-9]{1,5})/(?P<rtime>[-.0-9]{1,5}) (?P<gzip>[-.0-9]{1,5}) (?P<pipe>[p.]) (?P<creqs>[0-9]+)
+method = search
+counter_keys = method,uri,http,status,rbytes,bbytes,pipe,fun,lvl
+kv_keys = fun,http,lvl,method,status,uri,pipe
+timer_keys = uctim,uhtim,urtim,rtime
 
-;[nginx_error_log]
-;enabled = true
-;prefix = service.nginx.error_log.
+[input:nginx_error_log]
+plugin = log_watch
+period = 0
+log_fpath = /var/log/nginx/error.log
+prefix = service.nginx.error_log.
+parser = metricol.inputs.plugins.nginx_logs.parse_log_lines
+pattern = (?P<time>[ 0-9:/+]{19}) \[(?P<lvl>[a-z]{1,9})\] [#:* 0-9]+ (?P<fun>\w+)\(\)
+method = match
+counter_keys = method,uri,http,status,rbytes,bbytes,pipe,fun,lvl
+kv_keys = fun,http,lvl,method,status,uri,pipe
+timer_keys = uctim,uhtim,urtim,rtime
 
-[redis_info]
-enabled = true
+[input:redis_info]
+plugin = redis_info
 socket = /tmp/redis.sock
 prefix = service.redis.
+absolute_keys = evicted_keys,expired_keys,keyspace_hits,keyspace_misses,rejected_connections,total_commands_processed,total_connections_received
 
-[uwsgi_myapp:1]
-enabled = true
+[input:uwsgi_app:1]
+plugin = uwsgi_stats
 scheme = http
 host = 127.0.0.1
-port = 1717
-uri = /uwsgi_stats/myapp
+port = 11717
+uri = /
 server_name = localhost
-prefix = service.uwsgi.myapp.
+prefix = service.uwsgi.app_www_1.
 
-[uwsgi_myapp:2]
-enabled = true
+[input:uwsgi_app:2]
+plugin = uwsgi_stats
 scheme = http
 host = 127.0.0.1
-port = 1818
-uri = /uwsgi_stats/myotherapp
+port = 11718
+uri = /
 server_name = localhost
-prefix = service.uwsgi.myotherapp.
+prefix = service.uwsgi.app_www_2.
 
-[meminfo]
-enabled = true
+[input:meminfo]
+plugin = meminfo
 meminfo = /proc/meminfo
 prefix = system.memory.
 
-[load_info]
-enabled = true
+[input:load_info]
+plugin = load_info
 loadavg = /proc/loadavg
 prefix = system.load_info.
 
+[input:networking]
+plugin = sys_class_net
+interfaces = lo,eth0
+prefix = system.network.
+
+[input:disks_spaces]
+plugin = disks_spaces
+targets = /:root
+prefix = system.disks_spaces.
+
+[input:auth_log_sessions]
+plugin = auth_log_watch
+period = 0
+log_fpath = /var/log/auth.log
+prefix = service.auth.sessions.
+parser = metricol.inputs.plugins.auth_log.parse_log_lines
+pattern = (?P<time>[A-Za-z]+ [0-9]+ [:0-9]{8}) .+ session (?P<action>opened|closed) for user (?P<user>[a-z_][a-z0-9_-]*[$]?)
+method = match
+
+[input:auth_log_attempts]
+plugin = auth_log_watch
+period = 0
+log_fpath = /var/log/auth.log
+prefix = service.auth.attempts.
+parser = metricol.inputs.plugins.auth_log.parse_log_lines
+pattern = (?P<time>[A-Za-z]+ [0-9]+ [:0-9]{8}) .+ Accepted (?P<method>password|publickey) for (?P<user>[a-z_][a-z0-9_-]*[$]?) from
+method = match

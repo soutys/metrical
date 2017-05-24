@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-'''nginx log line plugin
+'''auth.log line plugin
 '''
 
 from __future__ import (
@@ -30,21 +30,8 @@ def parse_log_lines(lines, pattern_fn):
         data = match.groupdict()
         if 'time' in data:
             data['time'] = decode_time(data['time'])
-        if 'uri' in data:
-            if data['uri'].count('/') > 1:
-                data['uri'] = data['uri'].split('/', 1)[0].replace('.', '_')
-            if not data['uri']:
-                data['uri'] = '_other'
-        if 'http' in data:
-            data['http'] = data['http'].replace('.', '_')
-
-        for field in ['uctim', 'uhtim', 'urtim', 'gzip']:
-            if field in data and data[field] == '-':
-                del data[field]
-
-        if 'pipe' in data:
-            if data['pipe'] != 'p':
-                del data['pipe']
+        if 'user' in data:
+            data['user'] = data['user'].replace('.', '_')
 
         LOG.debug('DATA: %s', repr(data))
 

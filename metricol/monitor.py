@@ -19,6 +19,7 @@ import signal
 import time
 from queue import Queue
 
+from metricol.inputs.auth_log_watch import AuthLogWatch
 from metricol.inputs.disks_spaces import DisksSpaces
 from metricol.inputs.load_info import LoadInfo
 from metricol.inputs.log_watch import LogWatch
@@ -36,6 +37,7 @@ OUTPUT_PLUGINS = {
     'graphite_gw': GraphiteGateway,
 }
 INPUT_PLUGINS = {
+    'auth_log_watch': AuthLogWatch,
     'disks_spaces': DisksSpaces,
     'load_info': LoadInfo,
     'log_watch': LogWatch,

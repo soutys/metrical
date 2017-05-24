@@ -18,6 +18,8 @@ import sys
 import threading
 import time
 
+import dateutil.parser as du_parser
+
 
 LOG = logging.getLogger(__name__)
 
@@ -90,3 +92,12 @@ def get_method_by_path(method_path):
         pass
 
     return None
+
+
+def decode_time(value):
+    '''Decodes time representation
+    '''
+    try:
+        return int(du_parser.parse(value).timestamp())
+    except (OverflowError, ValueError) as exc:
+        LOG.warning('%s @ %s', repr(exc), repr(value))
