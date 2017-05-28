@@ -24,6 +24,7 @@ from metricol.inputs.disks_spaces import DisksSpaces
 from metricol.inputs.load_info import LoadInfo
 from metricol.inputs.log_watch import LogWatch
 from metricol.inputs.memory import MemInfo
+from metricol.inputs.mysql_status import MysqlStatus
 from metricol.inputs.nginx import NginxStatus
 from metricol.inputs.redis import RedisInfo
 from metricol.inputs.sys_class_net import SysClassNet
@@ -42,6 +43,7 @@ INPUT_PLUGINS = {
     'load_info': LoadInfo,
     'log_watch': LogWatch,
     'meminfo': MemInfo,
+    'mysql_status': MysqlStatus,
     'nginx_status': NginxStatus,
     'redis_info': RedisInfo,
     'sys_class_net': SysClassNet,
