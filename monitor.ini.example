@@ -4,24 +4,24 @@ period = 10
 
 [output:graphite_gw]
 plugin = graphite_gw
-scheme = https
-host = production-host
-port = 12003
-uri = /collector/
-hostname = production-host
+scheme = http
+host = 127.0.0.1
+port = 8003
+uri = /graphite/collector/
+hostname = graphite-host
 gzip_level = 0
-prefix = production-host.
+prefix = deployer.
 cafile = ./ssl/ca.crt
 cli_certfile = ./ssl/cli.crt
 cli_keyfile = ./ssl/cli.key
 
 [input:nginx_status]
 plugin = nginx_status
-scheme = https
-host = www-host
-port = 443
-uri = /nginx_status
-server_name = www-host
+scheme = http
+host = 127.0.0.1
+port = 80
+uri = /basic_status
+server_name = localhost
 prefix = service.nginx.core.
 absolute_keys = accepts,handled,requests
 
@@ -110,3 +110,11 @@ prefix = service.auth.attempts.
 parser = metricol.inputs.plugins.auth_log.parse_log_lines
 pattern = (?P<time>[A-Za-z]+ [0-9]+ [:0-9]{8}) .+ Accepted (?P<method>password|publickey) for (?P<user>[a-z_][a-z0-9_-]*[$]?) from
 method = match
+
+[input:mysql_status]
+plugin = mysql_status
+db_host = 127.0.0.1
+db_port = 3306
+db_user = root
+db_pass =
+prefix = service.mysql.status.

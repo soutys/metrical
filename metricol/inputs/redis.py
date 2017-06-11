@@ -106,7 +106,7 @@ class RedisInfo(MetricInput):
                 metric_type = MetricInput.METRIC_TYPE_COUNTER
                 prev_val = self.prev_values.get(key)
                 self.prev_values[key] = val
-                if prev_val is not None:
+                if prev_val is not None and val >= prev_val:
                     val -= prev_val
 
             if prev_val is not None:

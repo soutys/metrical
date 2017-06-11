@@ -67,8 +67,6 @@ class SysClassNet(MetricInput):
     def iter_metrics(self, key, val, tstamp):
         prev_val = self.prev_values.get(key)
         self.prev_values[key] = val
-        if prev_val is not None:
+        if prev_val is not None and val >= prev_val:
             val -= prev_val
-
-        if prev_val is not None:
             yield (self.cfg['prefix'] + key, val, MetricInput.METRIC_TYPE_COUNTER, tstamp)

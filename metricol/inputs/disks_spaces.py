@@ -21,7 +21,7 @@ from metricol.inputs import MetricInput
 
 LOG = logging.getLogger(__name__)
 
-DF_CMD_FMT = '/bin/df --all --block-size=1 --output=%(output)s'
+DF_CMD_FMT = '/bin/df --all --block-size=1K --output=%(output)s'
 DF_COLUMNS = ['target', 'itotal', 'iused', 'iavail', 'size', 'used', 'avail']
 SPACES_RE = re.compile(r'\s{2,}', re.M)
 

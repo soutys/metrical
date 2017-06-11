@@ -99,7 +99,7 @@ class UwsgiStats(MetricInput):
                     mkey = key + '.' + _key.replace(' ', '_')
                     prev_val = self.prev_values.get(mkey)
                     self.prev_values[mkey] = _val
-                    if prev_val is not None:
+                    if prev_val is not None and _val >= prev_val:
                         _val -= prev_val
                         yield (
                             self.cfg['prefix'] + mkey, _val,

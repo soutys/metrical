@@ -79,7 +79,7 @@ class MysqlStatus(MetricInput):
 
         prev_val = self.prev_values.get(metric)
         self.prev_values[metric] = val
-        if prev_val is not None:
+        if prev_val is not None and val >= prev_val:
             val -= prev_val
             yield (
                 self.cfg['prefix'] + metric, val,
