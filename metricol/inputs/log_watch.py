@@ -83,19 +83,30 @@ class LogWatch(MetricInput):
 
 
     def iter_metrics(self, _, val, tstamp):
+        metric_data_dc = {}
         for _key, _val in val.items():
+            key = _key
             metric_type = MetricInput.METRIC_TYPE_GAUGE
             if _key in self.counter_keys:
                 metric_type = MetricInput.METRIC_TYPE_COUNTER
+            elif _key in self.kv_keys:
+                metric_type = MetricInput.METRIC_TYPE_COUNTER
+                key += '.' + _val
+                _val = 1
             elif _key in self.timer_keys:
                 metric_type = MetricInput.METRIC_TYPE_TIMER
 
-            key = _key
-            if _key in self.kv_keys:
-                key += '.' + _val
-                _val = 1
+            md_key = (key, metric_type)
+            if md_key in metric_data_dc:
+                if metric_type == MetricInput.METRIC_TYPE_COUNTER:
+                    metric_data_dc[md_key] += _val
+                elif metric_type in [MetricInput.METRIC_TYPE_TIMER, MetricInput.METRIC_TYPE_GAUGE]:
+                    metric_data_dc[md_key] = max(metric_data_dc[md_key], _val)
+            else:
+                metric_data_dc[md_key] = _val
 
-            yield (self.cfg['prefix'] + key, _val, metric_type, tstamp)
+        for (_key, metric_type), _val in metric_data_dc.items():
+            yield (self.cfg['prefix'] + _key, _val, metric_type, tstamp)
 
 
     def get_metrics(self):
