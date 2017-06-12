@@ -1,6 +1,6 @@
 [DEFAULT]
 log_level = INFO
-period = 10
+period = 60
 
 [output:graphite_gw]
 plugin = graphite_gw
@@ -33,7 +33,7 @@ prefix = service.nginx.access_log.
 parser = metricol.inputs.plugins.nginx_logs.parse_log_lines
 pattern = \[(?P<time>[^\]]{25})\] "(?P<method>[A-Z]{1,7}) /(?P<uri>.*?) HTTP/(?P<http>[.0-2]{3})" (?P<status>[0-9]{3}) (?P<rbytes>[0-9]+)/(?P<bbytes>[0-9]+) (?P<uctim>[-.0-9]{1,5})/(?P<uhtim>[-.0-9]{1,5})/(?P<urtim>[-.0-9]{1,5})/(?P<rtime>[-.0-9]{1,5}) (?P<gzip>[-.0-9]{1,5}) (?P<pipe>[p.]) (?P<creqs>[0-9]+)
 method = search
-counter_keys = method,uri,http,status,rbytes,bbytes,pipe,fun,lvl
+counter_keys = method,uri,http,rbytes,bbytes
 kv_keys = fun,http,lvl,method,status,uri,pipe
 timer_keys = uctim,uhtim,urtim,rtime
 
@@ -45,7 +45,7 @@ prefix = service.nginx.error_log.
 parser = metricol.inputs.plugins.nginx_logs.parse_log_lines
 pattern = (?P<time>[ 0-9:/+]{19}) \[(?P<lvl>[a-z]{1,9})\] [#:* 0-9]+ (?P<fun>\w+)\(\)
 method = match
-counter_keys = method,uri,http,status,rbytes,bbytes,pipe,fun,lvl
+counter_keys = method,uri,http,rbytes,bbytes
 kv_keys = fun,http,lvl,method,status,uri,pipe
 timer_keys = uctim,uhtim,urtim,rtime
 
