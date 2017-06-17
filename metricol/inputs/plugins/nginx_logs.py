@@ -19,6 +19,21 @@ from metricol.commons import decode_time
 LOG = logging.getLogger(__name__)
 
 
+def clean_uri(uri):
+    '''Cleans URI
+    '''
+    if uri.count('/') > 1:
+        prefix = uri.split('/', 1)[0]
+        if prefix.isalnum():
+            uri = prefix.replace('.', '_')
+        else:
+            uri = ''
+    if not uri:
+        uri = '_other'
+
+    return uri
+
+
 def parse_log_lines(lines, pattern_fn):
     '''Parses log line using pattern
     '''
@@ -31,10 +46,7 @@ def parse_log_lines(lines, pattern_fn):
         if 'time' in data:
             data['time'] = decode_time(data['time'])
         if 'uri' in data:
-            if data['uri'].count('/') > 1:
-                data['uri'] = data['uri'].split('/', 1)[0].replace('.', '_')
-            if not data['uri']:
-                data['uri'] = '_other'
+            data['uri'] = clean_uri(data['uri'])
         if 'http' in data:
             data['http'] = data['http'].replace('.', '_')
 
