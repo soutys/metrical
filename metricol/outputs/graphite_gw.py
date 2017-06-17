@@ -12,7 +12,9 @@ from __future__ import (
 )
 
 import gzip
+import linecache
 import logging
+import os
 import tracemalloc
 from queue import Empty
 
@@ -31,6 +33,34 @@ tracemalloc.start()
 LOG = logging.getLogger(__name__)
 
 
+def display_top(snapshot, key_type='lineno', limit=10):
+    '''Logs limited top of tracemalloc snapshot
+    '''
+    snapshot = snapshot.filter_traces((
+        tracemalloc.Filter(False, '<frozen importlib._bootstrap>'),
+        tracemalloc.Filter(False, '<unknown>'),
+    ))
+    top_stats = snapshot.statistics(key_type)
+
+    LOG.warning('Top %s lines', limit)
+    for index, stat in enumerate(top_stats[:limit], 1):
+        frame = stat.traceback[0]
+        # replace '/path/to/module/file.py' with 'module/file.py'
+        filename = os.sep.join(frame.filename.split(os.sep)[-2:])
+        LOG.warning(
+            '#%s: %s:%s: %.1f KiB', index, filename, frame.lineno, stat.size / 1024)
+        line = linecache.getline(frame.filename, frame.lineno).strip()
+        if line:
+            LOG.warning('    %s', line)
+
+    other = top_stats[limit:]
+    if other:
+        size = sum(stat.size for stat in other)
+        LOG.warning('%s other: %.1f KiB', len(other), size / 1024)
+    total = sum(stat.size for stat in top_stats)
+    LOG.warning('Total allocated size: %.1f KiB', total / 1024)
+
+
 class GraphiteGateway(MetricOutput):
     '''Graphite pusher class
     '''
@@ -43,7 +73,6 @@ class GraphiteGateway(MetricOutput):
         self.req_session = Session()
         self.url = 'http://localhost/'
         self.gzip_level = 0
-        self.snapshot_prev = None
 
 
     def prepare_things(self):
@@ -103,9 +132,5 @@ class GraphiteGateway(MetricOutput):
         except RequestException as exc:
             LOG.warning('%s @ %s', repr(exc), repr(self.url))
 
-        snapshot_curr = tracemalloc.take_snapshot()
-        if self.snapshot_prev:
-            top_stats = snapshot_curr.compare_to(self.snapshot_prev, 'lineno')
-            for stat in top_stats[:10]:
-                LOG.warning('TM STAT: %s', stat)
-        self.snapshot_prev = snapshot_curr
+        snapshot = tracemalloc.take_snapshot()
+        display_top(snapshot)
