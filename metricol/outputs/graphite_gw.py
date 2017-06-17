@@ -13,6 +13,7 @@ from __future__ import (
 
 import gzip
 import logging
+import tracemalloc
 from queue import Empty
 
 from requests import (
@@ -24,6 +25,8 @@ from requests import (
 from metricol.inputs import MetricInput
 from metricol.outputs import MetricOutput
 
+
+tracemalloc.start()
 
 LOG = logging.getLogger(__name__)
 
@@ -40,6 +43,7 @@ class GraphiteGateway(MetricOutput):
         self.req_session = Session()
         self.url = 'http://localhost/'
         self.gzip_level = 0
+        self.snapshot_prev = None
 
 
     def prepare_things(self):
@@ -98,3 +102,10 @@ class GraphiteGateway(MetricOutput):
                 LOG.warning('Code %s @ %s', resp.status_code, repr(self.url))
         except RequestException as exc:
             LOG.warning('%s @ %s', repr(exc), repr(self.url))
+
+        snapshot_curr = tracemalloc.take_snapshot()
+        if self.snapshot_prev:
+            top_stats = snapshot_curr.compare_to(self.snapshot_prev, 'lineno')
+            for stat in top_stats[:10]:
+                LOG.warning('TM STAT: %s', stat)
+        self.snapshot_prev = snapshot_curr
