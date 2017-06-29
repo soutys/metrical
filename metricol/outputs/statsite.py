@@ -43,15 +43,12 @@ class Statsite(MetricOutput):
         while True:
             try:
                 _key, _val, _type, _ = self.queue.get(block=False)
-                LOG.info('%s / %s / %s', _key, _val, _type)
+                LOG.info('%s / %s (%s) / %s', _key, _val, type(_val), _type)
                 if _type == MetricInput.METRIC_TYPE_GAUGE:
                     self.client.gauge(_key, _val)
                 elif _type == MetricInput.METRIC_TYPE_COUNTER:
-                    if _val.isdigit():
-                        self.client.incr(_key, count=int(_val))
-                    else:
-                        self.client.incr(_key + '.' + _val, count=1)
+                    self.client.incr(_key, count=_val)
                 elif _type == MetricInput.METRIC_TYPE_TIMER:
-                    self.client.timing(_key, float(_val))
+                    self.client.timing(_key, _val)
             except Empty:
                 break
