@@ -3,11 +3,17 @@
 '''Package info module
 '''
 
-from __future__ import with_statement, division, absolute_import, print_function
-
+from __future__ import (
+    absolute_import,
+    division,
+    print_function,
+    unicode_literals,
+    with_statement,
+)
 
 __author__ = 'soutys <soutys@example.com>'
-__version__ = open('VERSION', 'r').read().strip()
+__version__ = open(
+    os.path.join(os.path.dirname(__file__), 'VERSION'), 'r').read().strip()
 # https://pypi.python.org/pypi?%3Aaction=list_classifiers
 __classifiers__ = [
     'Development Status :: 1 - Planning',
