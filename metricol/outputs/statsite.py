@@ -44,10 +44,10 @@ class Statsite(MetricOutput):
             try:
                 _key, _val, _type, _ = self.queue.get(block=False)
                 if _type == MetricInput.METRIC_TYPE_GAUGE:
-                    self.client.gauge(_key, _val)
+                    self.client.gauge(_key, float(_val))
                 elif _type == MetricInput.METRIC_TYPE_COUNTER:
-                    self.client.incr(_key, count=_val)
+                    self.client.incr(_key, count=float(_val))
                 elif _type == MetricInput.METRIC_TYPE_TIMER:
-                    self.client.timing(_key, _val)
+                    self.client.timing(_key, float(_val))
             except Empty:
                 break
