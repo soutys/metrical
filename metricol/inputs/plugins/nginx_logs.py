@@ -45,12 +45,17 @@ def parse_log_lines(lines, pattern_fn):
         data = match.groupdict()
         if 'time' in data:
             data['time'] = decode_time(data['time'])
+        if 'method' in data:
+            data['method.' + data.pop('method')] = 1
         if 'uri' in data:
             data['uri'] = clean_uri(data['uri'])
         if 'http' in data:
-            data['http'] = data['http'].replace('.', '_')
-        if 'method' in data:
-            data['method.' + data.pop('method')] = 1
+            data['http.' + data.pop('http').replace('.', '_')] = 1
+
+        for field in ['bbytes', 'creqs']:
+            if field not in data:
+                continue
+            data[field] = int(data[field])
 
         for field in ['uctim', 'uhtim', 'urtim', 'gzip']:
             if field not in data:
