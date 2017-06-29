@@ -33,7 +33,7 @@ class GraphiteGateway(GraphiteGatewayOutput):
 
     def get_metric_line(self, metric_data):
         _key, _val, _ts = metric_data
-        return ' '.join([_key, _val, _ts])
+        return ' '.join([self.cfg['prefix'] + _key, _val, _ts])
 
 
 def main():

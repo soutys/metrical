@@ -23,15 +23,11 @@ def clean_uri(uri):
     '''Cleans URI
     '''
     if uri.count('/') > 1:
-        prefix = uri.split('/', 1)[0]
+        prefix = uri.split('/', 2)[1]
         if prefix.isalnum():
-            uri = prefix.replace('.', '_')
-        else:
-            uri = ''
-    if not uri:
-        uri = '_other'
+            return prefix
 
-    return uri
+    return '_other'
 
 
 def parse_log_lines(lines, pattern_fn):
@@ -45,12 +41,13 @@ def parse_log_lines(lines, pattern_fn):
         data = match.groupdict()
         if 'time' in data:
             data['time'] = decode_time(data['time'])
-        if 'method' in data:
-            data['method.' + data.pop('method')] = 1
         if 'uri' in data:
             data['uri'] = clean_uri(data['uri'])
-        if 'http' in data:
-            data['http.' + data.pop('http').replace('.', '_')] = 1
+
+        for field in ['method', 'http']:
+            if field not in data:
+                continue
+            data[field + '.' + data.pop(field).replace('.', '_')] = 1
 
         for field in ['rbytes', 'bbytes', 'creqs']:
             if field not in data:
