@@ -57,7 +57,7 @@ def parse_log_lines(lines, pattern_fn):
                 continue
             data[field] = int(data[field])
 
-        for field in ['uctim', 'uhtim', 'urtim', 'gzip']:
+        for field in ['rtime', 'uctim', 'uhtim', 'urtim', 'gzip']:
             if field not in data:
                 continue
             if data[field] == '-':
