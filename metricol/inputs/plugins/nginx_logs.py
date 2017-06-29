@@ -49,10 +49,16 @@ def parse_log_lines(lines, pattern_fn):
             data['uri'] = clean_uri(data['uri'])
         if 'http' in data:
             data['http'] = data['http'].replace('.', '_')
+        if 'method' in data:
+            data['method.' + data.pop('method')] = 1
 
         for field in ['uctim', 'uhtim', 'urtim', 'gzip']:
-            if field in data and data[field] == '-':
+            if field not in data:
+                continue
+            if data[field] == '-':
                 del data[field]
+            else:
+                data[field] = float(data[field])
 
         if 'pipe' in data:
             if data['pipe'] != 'p':
