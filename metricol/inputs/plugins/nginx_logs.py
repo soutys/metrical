@@ -52,7 +52,7 @@ def parse_log_lines(lines, pattern_fn):
         if 'http' in data:
             data['http.' + data.pop('http').replace('.', '_')] = 1
 
-        for field in ['bbytes', 'creqs']:
+        for field in ['rbytes', 'bbytes', 'creqs']:
             if field not in data:
                 continue
             data[field] = int(data[field])

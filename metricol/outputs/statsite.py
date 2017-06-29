@@ -43,7 +43,6 @@ class Statsite(MetricOutput):
         while True:
             try:
                 _key, _val, _type, _ = self.queue.get(block=False)
-                LOG.info('%s / %s (%s) / %s', _key, _val, type(_val), _type)
                 if _type == MetricInput.METRIC_TYPE_GAUGE:
                     self.client.gauge(_key, _val)
                 elif _type == MetricInput.METRIC_TYPE_COUNTER:
