@@ -11,6 +11,8 @@ from __future__ import (
     with_statement,
 )
 
+import os
+
 __author__ = 'soutys <soutys@example.com>'
 __version__ = open(
     os.path.join(os.path.dirname(__file__), 'VERSION'), 'r').read().strip()
