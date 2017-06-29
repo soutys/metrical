@@ -44,7 +44,7 @@ def parse_log_lines(lines, pattern_fn):
         if 'uri' in data:
             data['uri'] = clean_uri(data['uri'])
 
-        for field in ['method', 'http']:
+        for field in ['method', 'uri', 'http']:
             if field not in data:
                 continue
             data[field + '.' + data.pop(field).replace('.', '_')] = 1
