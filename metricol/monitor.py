@@ -30,12 +30,18 @@ from metricol.inputs.redis import RedisInfo
 from metricol.inputs.sys_class_net import SysClassNet
 from metricol.inputs.uwsgi import UwsgiStats
 from metricol.outputs.graphite_gw import GraphiteGateway
+from metricol.outputs.statsite import Statsite
+from metricol.sinks.graphite_gw import GraphiteGateway as GraphiteGatewaySink
 
 
 LOG = logging.getLogger(__name__)
 
+SINK_PLUGINS = {
+    'graphite_gw': GraphiteGatewaySink,
+}
 OUTPUT_PLUGINS = {
     'graphite_gw': GraphiteGateway,
+    'statsite': Statsite,
 }
 INPUT_PLUGINS = {
     'auth_log_watch': AuthLogWatch,
@@ -82,8 +88,8 @@ def load_config(cfg_fpath):
     return config
 
 
-def main():
-    '''Main method
+def pre_setup():
+    '''Pre-setups monitor(s) / plugin(s) env
     '''
     config_logger(logging.NOTSET)
 
@@ -107,7 +113,17 @@ def main():
             logging.root.removeHandler(handler)
         config_logger(getattr(logging, cfg['DEFAULT']['log_level'], logging.NOTSET))
 
+    signal.signal(signal.SIGINT, signal_recv)
     signal.signal(signal.SIGTERM, signal_recv)
+
+    return cfg
+
+
+def main():
+    '''Main method
+    '''
+    cfg = pre_setup()
+
     output_queue = Queue()
 
     for section_name, section_proxy in cfg.items():
