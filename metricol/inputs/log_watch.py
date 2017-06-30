@@ -28,7 +28,7 @@ class LogWatch(MetricInput):
     '''Logs watcher
     '''
     options = ['log_fpath', 'parser', 'pattern', 'method', 'prefix']
-    TAIL_CMD_FMT = '/usr/bin/tail --follow=name --lines=1000 --quiet --retry %s'
+    TAIL_CMD_FMT = '/usr/bin/tail --follow=name --quiet --retry %s'
 
     def __init__(self, section, queue):
         super(LogWatch, self).__init__(section, queue)
