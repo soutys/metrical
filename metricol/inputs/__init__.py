@@ -42,7 +42,7 @@ class MetricInput(ManageableThread):
 
     def prepare_things(self):
         for field in self.options:
-            self.cfg[field] = self._section[field]
+            self.cfg[field] = self._section.get(field)
         self.period = int(self._section.get('period', self.period))
         for field in ['absolute_keys', 'counter_keys', 'kv_keys', 'timer_keys']:
             if field not in self._section:

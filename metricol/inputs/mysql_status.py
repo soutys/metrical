@@ -32,7 +32,7 @@ METRICS_RE = re.compile(
 class MysqlStatus(MetricInput):
     '''mysql status fetcher / parser class
     '''
-    options = ['db_host', 'db_port', 'db_user', 'db_pass', 'prefix']
+    options = ['db_sock', 'db_host', 'db_port', 'db_user', 'db_pass', 'prefix']
 
     def __init__(self, section, queue):
         super(MysqlStatus, self).__init__(section, queue)
@@ -44,10 +44,16 @@ class MysqlStatus(MetricInput):
         '''
         conn = cur = None
         try:
-            conn = connect(
-                host=self.cfg['db_host'], port=self.cfg['db_port'],
-                user=self.cfg['db_user'], password=self.cfg['db_pass'],
-                use_unicode=True, get_warnings=True)
+            db_sock = self.cfg['db_sock']
+            if db_sock:
+                conn = connect(
+                    unix_socket=db_sock, user=self.cfg['db_user'],
+                    use_unicode=True, get_warnings=True)
+            else:
+                conn = connect(
+                    host=self.cfg['db_host'], port=self.cfg['db_port'],
+                    user=self.cfg['db_user'], password=self.cfg['db_pass'],
+                    use_unicode=True, get_warnings=True)
         except Error as exc:
             LOG.warning('%s @ %s', repr(exc), repr(self.cfg))
         else:
